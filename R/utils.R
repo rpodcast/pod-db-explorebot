@@ -217,3 +217,238 @@ process_chash_title_image <- function(extract_df, podcasts_db, clean = TRUE) {
   return(df)
 }
 
+podcast_db_theme <- function() {
+  reactableTheme(
+    style = list(fontSize = '0.875rem')
+  )
+}
+
+record_detail_table <- function(df, preprocess = TRUE, nrow = NULL, preprocessing_note = NULL) {
+  if (preprocess) {
+    # obtain categories df
+    #cat_df <- gen_categories_df(df)
+
+    # preprocessing
+    df <- df |>
+      dplyr::mutate(
+        episodeCount_colors = dplyr::case_when(
+          episodeCount < 1 ~ "#e00000",
+          episodeCount >= 1 & episodeCount < 5 ~ "#fb9332",
+          TRUE ~ '#0c7a36'
+        )
+      ) |>
+      dplyr::mutate(
+        lastHttpStatus_colors = dplyr::case_when(
+          lastHttpStatus == 200 ~ "#008000",
+          TRUE ~ "#e00000"
+        )
+      ) |>
+      dplyr::mutate(
+        imageUrl_clean = dplyr::case_when(
+          imageUrl == "" ~ "https://podcastindex.org/images/no-cover-art.png",
+          stringr::str_length(imageUrl) < 29 ~ "https://podcastindex.org/images/no-cover-art.png",
+          !grepl("https|http", imageUrl) ~ "https://podcastindex.org/images/no-cover-art.png",
+          .default = imageUrl
+        )
+      ) |>
+      #dplyr::select(-newestItemPubdate, -oldestItemPubdate, -createdOn, -lastUpdate) |>
+      dplyr::select(imageUrl_clean, podcastGuid, title, url, lastUpdate_p, newestEnclosureDuration, newestItemPubdate_p, oldestItemPubdate_p, episodeCount, everything())
+
+    df <- dplyr::select(df, -any_of(c("newestItemPubdate", "oldestItemPubdate", "createdOn", "lastUpdate")))
+  }
+
+  if (!is.null(nrow)) {
+    df <- dplyr::slice(df, 1:nrow)
+  }
+  
+  tbl_object <- reactable::reactable(
+    df,
+    defaultColDef = colDef(vAlign = "center", headerClass = "header"),
+    columns = list(
+      imageUrl = colDef(show = FALSE),
+      imageUrl_clean = colDef(
+        name = "",
+        maxWidth = 70,
+        align = "center",
+        sticky = "left",
+        cell = reactablefmtr::embed_img(height = 40, width = 40)
+      ),
+      podcastGuid = colDef(
+        name = "Podcast GUID",
+        sticky = "left"
+      ),
+      title = colDef(
+        name = "Title",
+        sticky = "left",
+        show = TRUE
+      ),
+      id = colDef(
+        show = FALSE
+      ),
+      url = colDef(
+        name = "URLs",
+        cell = function(value, index) {
+          id <- dplyr::slice(df, index) |> dplyr::pull(id)
+          podindex_url <- htmltools::tags$a(href = paste0("https://podcastindex.org/podcast/", id), target = "_blank", " podcastindex ")
+          url <- htmltools::tags$a(href = value, target = "_blank", " rss-feed ")
+          link <- htmltools::tags$a(href = dplyr::slice(df, index) |> dplyr::pull(link), target = "_blank", " link ")
+          original_url <- htmltools::tags$a(href = dplyr::slice(df, index) |> dplyr::pull(originalUrl), target = "_blank", " original url ")
+
+          div(
+            class = "podcast-urls",
+            podindex_url,
+            url
+          )
+        }
+      ),
+      lastUpdate_p = colDef(
+        name = "Last Update",
+        format = colFormat(datetime = TRUE, hour12 = NULL)
+      ),
+      link = colDef(
+        name = "Link",
+        cell = function(value) {
+          htmltools::tags$a(href = value, target = "_blank", "click here")
+        },
+        show = FALSE
+      ),
+      lastHttpStatus = colDef(
+        name = "HTTP Status",
+        cell = reactablefmtr::color_tiles(
+          df,
+          color_ref = 'lastHttpStatus_colors'
+        )
+        # style = function(value) {
+        #   if (value == 200L) {
+        #     color <- "#008000"
+        #   } else {
+        #     color <- "#e00000"
+        #   }
+        # }
+      ),
+      dead = colDef(
+        show = FALSE
+      ),
+      contentType = colDef(
+        show = FALSE
+      ),
+      itunesId = colDef(
+        show = FALSE
+      ),
+      itunesIdText = colDef(
+        name = "itunesId",
+        show = TRUE
+      ),
+      originalUrl = colDef(
+        name = "Original URL",
+        cell = function(value) {
+          htmltools::tags$a(href = value, target = "_blank", "click here")
+        },
+        show = FALSE
+      ),
+      itunesAuthor = colDef(
+        show = FALSE
+      ),
+      itunesOwnerName = colDef(
+        show = FALSE
+      ),
+      explicit = colDef(
+        show = FALSE
+      ),
+      itunesType = colDef(
+        name = "itunesType",
+        show = FALSE
+      ),
+      generator = colDef(
+        name = "Generator",
+        show = FALSE
+      ),
+      newestItemPubdate_p = colDef(
+        name = "Newest Entry",
+        format = colFormat(datetime = TRUE)
+      ),
+      language = colDef(
+        name = "Language",
+        show = FALSE
+      ),
+      oldestItemPubdate_p = colDef(
+        name = "Oldest Entry",
+        format = colFormat(datetime = TRUE)
+      ),
+      episodeCount = colDef(
+        name = "Episodes",
+        cell = reactablefmtr::color_tiles(
+          df,
+          color_ref = 'episodeCount_colors'
+        )
+      ),
+      popularityScore = colDef(
+        name = "Popularity Score",
+        show = FALSE
+      ),
+      priority = colDef(
+        show = FALSE
+      ),
+      createdOn_p = colDef(
+        name = "CreatedOn",
+        format = colFormat(datetime = TRUE),
+        show = FALSE
+      ),
+      updateFrequency = colDef(
+        name = "Update Frequency",
+        style = color_scales(df),
+        show = FALSE
+      ),
+      chash = colDef(
+        show = TRUE
+      ),
+      host = colDef(
+        name = "Host",
+        show = TRUE
+      ),
+      newestEnclosureUrl = colDef(
+        name = "Newest Enclosure URL",
+        cell = function(value) {
+          htmltools::tags$a(href = value, target = "_blank", "click here")
+        },
+        show = FALSE
+      ),
+      description = colDef(
+        show = FALSE
+      ),
+      category = colDef(
+        name = "Categories",
+        show = FALSE
+      ),
+      newestEnclosureDuration = colDef(
+        name = "Newest Duration",
+        cell = function(value) {
+          if (is.na(value)) return("NA")
+
+          td <- lubridate::seconds_to_period(value)
+          sprintf(
+            '%02d:%02d:%02d',
+            td@hour,
+            lubridate::minute(td),
+            lubridate::second(td))
+        }
+        #format = colFormat(separators = TRUE)
+      ),
+      episodeCount_colors = colDef(
+        show = FALSE
+      ),
+      lastHttpStatus_colors = colDef(
+        show = FALSE
+      ),
+      created_timespan_days = colDef(
+        show = FALSE
+      ),
+      pub_timespan_days = colDef(
+        show = FALSE
+      )
+    ),
+    theme = podcast_db_theme()
+  )
+
+  return(tbl_object)
+}

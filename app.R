@@ -8,9 +8,11 @@ library(DBI)
 library(dplyr)
 library(shinychat)
 library(reactable)
+library(reactablefmtr)
 
 # load scripts
 source("R/query.R")
+source("R/utils.R")
 
 # initialize connection to duckdb database
 conn <- dbConnect(
@@ -80,11 +82,12 @@ server <- function(input, output, session) {
 
   # data table
   output$table <- renderReactable({
-    reactable(
-      podcast_data(),
-      pagination = FALSE,
-      bordered = TRUE
-    )
+    record_detail_table(podcast_data())
+    # reactable(
+    #   podcast_data(),
+    #   pagination = FALSE,
+    #   bordered = TRUE
+    # )
   })
 
   # sidebot
