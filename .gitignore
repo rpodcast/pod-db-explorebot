@@ -2,3 +2,4 @@
 .Renviron
 data-raw/*
 !data-raw/README.md
+!data-raw/podcastindex_feeds_small.duckdb

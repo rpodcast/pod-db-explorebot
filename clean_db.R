@@ -7,7 +7,7 @@ library(tidyr)
 library(anytime)
 library(duckdb)
 
-source("utils.R")
+source("R/utils.R")
 
 # unpack and import database
 archive::archive_extract("data-raw/podcastindex_feeds.db.tgz", dir = "data-raw")
