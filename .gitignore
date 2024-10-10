@@ -1,0 +1,4 @@
+.env
+.Renviron
+data-raw/*
+!data-raw/README.md
