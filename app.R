@@ -28,6 +28,7 @@ onStop(\() dbDisconnect(conn))
 # import prompt from markdown file in root of directory
 prompt_content <- readLines("prompt.md", warn = FALSE)
 system_prompt_str <- paste(prompt_content, collapse = "\n")
+greeting <- paste(readLines("greeting.md"), collapse = "\n")
 
 # define user interface
 ui <- page_sidebar(
@@ -161,13 +162,13 @@ server <- function(input, output, session) {
   )
 
   # add greeting (only for user, not for model itself)
-  # chat_append(
-  #   "chat",
-  #   list(
-  #     role = "assistant",
-  #     content = "Hello! I hope you enjoy this chat."
-  #   )
-  # )
+  chat_append_message(
+    "chat",
+    list(
+      role = "assistant",
+      content = greeting
+    )
+  )
 
   observeEvent(input$chat_user_input, {
     stream <- chat$stream_async(input$chat_user_input)
